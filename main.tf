@@ -4,22 +4,22 @@ provider "archive" {
 
 locals {
   callback_id                        = "${coalesce("${var.callback_id}", "${replace("${var.slash_command}", "-", "_")}")}"
+  function_name                      = "${coalesce("${var.sms_function_name}", "slack-callback-${replace("${local.callback_id}", "_", "-")}")}"
   log_arn_prefix                     = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}"
-  role_name                          = "${coalesce("${var.role_name}", "${local.function_name}-role")}"
   role_inline_policy_name            = "${coalesce("${var.role_inline_policy_name}", "${local.role_name}-inline-policy")}"
+  role_name                          = "${coalesce("${var.role_name}", "${local.function_name}-role")}"
   slack_verification_token_encrypted = "${element(coalescelist("${data.aws_kms_ciphertext.verification_token.*.ciphertext_blob}", list("${var.slack_verification_token}")), 0)}"
   slack_web_api_token_encrypted      = "${element(coalescelist("${data.aws_kms_ciphertext.web_api_token.*.ciphertext_blob}", list("${var.slack_web_api_token}")), 0)}"
-  function_name                      = "${coalesce("${var.sms_function_name}", "slack-callback-${replace("${local.callback_id}", "_", "-")}")}"
 
   dialog {
     callback_id  = "${local.callback_id}"
     submit_label = "Send"
-    title        = "${var.dialog_title}"
+    title        = "${var.slash_command_dialog_title}"
     elements     = [
       {
-        hint       = "${var.dialog_element_hint}"
-        label      = "${var.dialog_element_label}"
-        max_length = "${var.dialog_element_max_length}"
+        hint       = "${var.slash_command_dialog_element_hint}"
+        label      = "${var.slash_command_dialog_element_label}"
+        max_length = "${var.slash_command_dialog_element_max_length}"
         name       = "${local.callback_id}"
         type       = "textarea"
       }
@@ -65,7 +65,7 @@ data "aws_iam_policy_document" "inline" {
 
   statement {
     actions   = ["sns:Publish"]
-    resources = ["${module.group_sms.topic_arn}"]
+    resources = ["${var.target_topic_arn}"]
   }
 }
 
@@ -103,7 +103,7 @@ resource "aws_lambda_function" "lambda" {
   environment {
     variables = {
       CALLBACK_ID = "${local.callback_id}"
-      TOPIC_ARN   = "${module.group_sms.topic_arn}"
+      TOPIC_ARN   = "${var.target_topic_arn}"
     }
   }
 }
@@ -150,19 +150,4 @@ module "slash_command" {
   slack_verification_token        = "${local.slack_verification_token_encrypted}"
   slack_web_api_token             = "${local.slack_web_api_token_encrypted}"
   slash_command                   = "${var.slash_command}"
-}
-
-module "group_sms" {
-  source                                = "amancevice/group-sms/aws"
-  version                               = "0.3.0"
-  default_sender_id                     = "${var.group_sms_default_sender_id}"
-  default_sms_type                      = "${var.group_sms_default_sms_type}"
-  delivery_status_iam_role_arn          = "${var.group_sms_delivery_status_iam_role_arn}"
-  delivery_status_success_sampling_rate = "${var.group_sms_delivery_status_success_sampling_rate}"
-  monthly_spend_limit                   = "${var.group_sms_monthly_spend_limit}"
-  role_name                             = "${var.group_sms_role_name}"
-  subscriptions                         = ["${var.group_sms_subscriptions}"]
-  topic_display_name                    = "${var.group_sms_topic_display_name}"
-  topic_name                            = "${local.callback_id}"
-  usage_report_s3_bucket                = "${var.group_sms_usage_report_s3_bucket}"
 }

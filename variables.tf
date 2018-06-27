@@ -24,70 +24,6 @@ variable "callback_id" {
   default     = ""
 }
 
-variable "dialog_element_hint" {
-  description = "Dialog textarea hint."
-  default     = "This will send a text to a group."
-}
-
-variable "dialog_element_label" {
-  description = "Dialog textarea label."
-  default     = "Message"
-}
-
-variable "dialog_element_max_length" {
-  description = "Dialog textarea max characters."
-  default     = 140
-}
-
-variable "dialog_title" {
-  description = "Dialog title."
-  default     = "Group SMS"
-}
-
-variable "group_sms_default_sender_id" {
-  description = "A custom ID, such as your business brand, displayed as the sender on the receiving device. Support for sender IDs varies by country."
-  default     = ""
-}
-
-variable "group_sms_default_sms_type" {
-  description = "Promotional messages are noncritical, such as marketing messages. Transactional messages are delivered with higher reliability to support customer transactions, such as one-time passcodes."
-  default     = "Promotional"
-}
-
-variable "group_sms_delivery_status_iam_role_arn" {
-  description = "The IAM role that allows Amazon SNS to write logs for SMS deliveries in CloudWatch Logs."
-  default     = ""
-}
-
-variable "group_sms_delivery_status_success_sampling_rate" {
-  description = "Default percentage of success to sample."
-  default     = ""
-}
-
-variable "group_sms_monthly_spend_limit" {
-  description = "The maximum amount to spend on SMS messages each month. If you send a message that exceeds your limit, Amazon SNS stops sending messages within minutes."
-  default     = ""
-}
-
-variable "group_sms_role_name" {
-  description = "The IAM role that allows Amazon SNS to write logs for SMS deliveries in CloudWatch Logs."
-  default     = "SNSSuccessFeedback"
-}
-
-variable "group_sms_subscriptions" {
-  description = "List of telephone numbers to subscribe to SNS."
-  type        = "list"
-  default     = []
-}
-
-variable "group_sms_topic_display_name" {
-  description = "Display name of the AWS SNS topic."
-}
-
-variable "group_sms_usage_report_s3_bucket" {
-  description = "The Amazon S3 bucket to receive daily SMS usage reports. The bucket policy must grant write access to Amazon SNS."
-}
-
 variable "kms_key_id" {
   description = "Slackbot KMS Key ID."
 }
@@ -166,6 +102,26 @@ variable "slash_command_auto_encrypt_tokens" {
   default     = true
 }
 
+variable "slash_command_dialog_element_hint" {
+  description = "Dialog textarea hint."
+  default     = "This will send a text to a group."
+}
+
+variable "slash_command_dialog_element_label" {
+  description = "Dialog textarea label."
+  default     = "Message"
+}
+
+variable "slash_command_dialog_element_max_length" {
+  description = "Dialog textarea max characters."
+  default     = 140
+}
+
+variable "slash_command_dialog_title" {
+  description = "Dialog title."
+  default     = "Group SMS"
+}
+
 variable "slash_command_lambda_description" {
   description = "Lambda function description."
   default     = "Slack slash command handler."
@@ -222,6 +178,10 @@ variable "slash_command_response" {
   default {
     text = "OK"
   }
+}
+
+variable "target_topic_arn" {
+  description = "ARN of target SNS topic for sending SMS messages."
 }
 
 variable "sms_description" {
