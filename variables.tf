@@ -114,7 +114,7 @@ variable "slash_command_dialog_element_label" {
 
 variable "slash_command_dialog_element_max_length" {
   description = "Dialog textarea max characters."
-  default     = 140
+  default     = 160
 }
 
 variable "slash_command_dialog_title" {
