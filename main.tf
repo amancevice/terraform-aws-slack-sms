@@ -3,13 +3,11 @@ provider "archive" {
 }
 
 locals {
-  callback_id                        = "${coalesce("${var.callback_id}", "${replace("${var.slash_command}", "-", "_")}")}"
-  function_name                      = "${coalesce("${var.sms_function_name}", "slack-callback-${replace("${local.callback_id}", "_", "-")}")}"
-  log_arn_prefix                     = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}"
-  role_inline_policy_name            = "${coalesce("${var.role_inline_policy_name}", "${local.role_name}-inline-policy")}"
-  role_name                          = "${coalesce("${var.role_name}", "${local.function_name}-role")}"
-  slack_verification_token_encrypted = "${element(coalescelist("${data.aws_kms_ciphertext.verification_token.*.ciphertext_blob}", list("${var.slack_verification_token}")), 0)}"
-  slack_web_api_token_encrypted      = "${element(coalescelist("${data.aws_kms_ciphertext.web_api_token.*.ciphertext_blob}", list("${var.slack_web_api_token}")), 0)}"
+  callback_id   = "${coalesce("${var.callback_id}", "${replace("${var.slash_command}", "-", "_")}")}"
+  function_name = "${coalesce("${var.sms_function_name}", "slack-${var.api_name}-callback-${replace("${local.callback_id}", "_", "-")}")}"
+  lambda_policy = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  role_name     = "${coalesce("${var.role_name}", "${local.function_name}-role")}"
+  role_path     = "${coalesce("${var.role_path}", "/${var.api_name}/")}"
 
   dialog {
     callback_id  = "${local.callback_id}"
@@ -47,28 +45,6 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
-data "aws_iam_policy_document" "inline" {
-  statement {
-    actions   = ["logs:CreateLogGroup"]
-    resources = ["*"]
-  }
-
-  statement {
-    actions   = [
-      "logs:CreateLogStream",
-      "logs:PutLogEvents"
-    ]
-    resources = [
-      "${local.log_arn_prefix}:log-group:/aws/lambda/${aws_lambda_function.lambda.function_name}:*"
-    ]
-  }
-
-  statement {
-    actions   = ["sns:Publish"]
-    resources = ["${var.target_topic_arn}"]
-  }
-}
-
 data "aws_region" "current" {
 }
 
@@ -79,14 +55,24 @@ data "aws_sns_topic" "trigger" {
 resource "aws_iam_role" "role" {
   assume_role_policy = "${data.aws_iam_policy_document.assume_role.json}"
   name               = "${local.role_name}"
-  path               = "${var.role_path}"
+  path               = "${local.role_path}"
 }
 
-resource "aws_iam_role_policy" "role_policy" {
-  name   = "${local.role_inline_policy_name}"
-  role   = "${aws_iam_role.role.id}"
-  policy = "${data.aws_iam_policy_document.inline.json}"
+resource "aws_iam_role_policy_attachment" "cloudwatch" {
+  policy_arn = "${local.lambda_policy}"
+  role       = "${aws_iam_role.role.name}"
 }
+
+resource "aws_iam_role_policy_attachment" "publish" {
+  policy_arn = "${var.publish_policy_arn}"
+  role       = "${aws_iam_role.role.name}"
+}
+
+resource "aws_iam_role_policy_attachment" "secrets" {
+  policy_arn = "${var.secrets_policy_arn}"
+  role       = "${aws_iam_role.role.name}"
+}
+
 
 resource "aws_lambda_function" "lambda" {
   description      = "${var.sms_description}"
@@ -123,8 +109,8 @@ resource "aws_sns_topic_subscription" "trigger" {
 }
 
 module "slash_command" {
-  source                          = "amancevice/slack-slash-command/aws"
-  version                         = "0.1.0"
+  source                          = "amancevice/slackbot-slash-command/aws"
+  version                         = "1.1.2"
   api_name                        = "${var.api_name}"
   api_execution_arn               = "${var.api_execution_arn}"
   api_invoke_url                  = "${var.api_invoke_url}"
@@ -135,19 +121,14 @@ module "slash_command" {
   auth_users_exclude              = "${var.slash_command_auth_users_exclude}"
   auth_users_include              = "${var.slash_command_auth_users_include}"
   auth_users_permission_denied    = "${var.slash_command_auth_users_permission_denied}"
-  auto_encrypt_tokens             = "${var.auto_encrypt_tokens}"
-  kms_key_id                      = "${var.kms_key_id}"
   lambda_description              = "${var.slash_command_lambda_description}"
   lambda_function_name            = "${var.slash_command_lambda_function_name}"
   lambda_memory_size              = "${var.slash_command_lambda_memory_size}"
   lambda_tags                     = "${var.slash_command_lambda_tags}"
   lambda_timeout                  = "${var.slash_command_lambda_timeout}"
-  role_name                       = "${var.slash_command_role_name}"
-  role_path                       = "${var.slash_command_role_path}"
-  role_inline_policy_name         = "${var.slash_command_role_inline_policy_name}"
+  role_arn                        = "${aws_iam_role.role.arn}"
   response_type                   = "dialog"
   response                        = "${local.dialog}"
-  slack_verification_token        = "${local.slack_verification_token_encrypted}"
-  slack_web_api_token             = "${local.slack_web_api_token_encrypted}"
+  secret                          = "${var.secret}"
   slash_command                   = "${var.slash_command}"
 }

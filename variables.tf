@@ -14,41 +14,31 @@ variable "api_parent_id" {
   description = "Slackbot slash commands parent resource ID."
 }
 
-variable "auto_encrypt_tokens" {
-  description = "Flag to automatically encrypt tokens."
-  default     = true
-}
-
 variable "callback_id" {
   description = "Slack callback ID."
   default     = ""
 }
 
-variable "kms_key_id" {
-  description = "Slackbot KMS Key ID."
-}
-
-variable "role_inline_policy_name" {
-  description = "Name of inline slash command role policy."
-  default     = ""
+variable "publish_policy_arn" {
+  description = "ARN of group SMS publish policy."
 }
 
 variable "role_name" {
-  description = "Name of role for slash command Lambda."
+  description = "Name of slash command role."
   default     = ""
 }
 
 variable "role_path" {
-  description = "Path for slash command role."
-  default     = "/service-role/"
+  description = "Path for slash command role role."
+  default     = ""
 }
 
-variable "slack_verification_token" {
-  description = "Slack verification token."
+variable "secret" {
+  description = "Name of Slackbot secret in AWS SecretsManager."
 }
 
-variable "slack_web_api_token" {
-  description = "Slack Web API token."
+variable "secrets_policy_arn" {
+  description = "Slackbot KMS key decryption permission policy ARN."
 }
 
 variable "slash_command" {
@@ -124,7 +114,7 @@ variable "slash_command_dialog_title" {
 
 variable "slash_command_lambda_description" {
   description = "Lambda function description."
-  default     = "Slack slash command handler."
+  default     = "Open dialog to send SMS message."
 }
 
 variable "slash_command_lambda_function_name" {
@@ -134,7 +124,7 @@ variable "slash_command_lambda_function_name" {
 
 variable "slash_command_lambda_memory_size" {
   description = "Lambda function memory size."
-  default     = 128
+  default     = 512
 }
 
 variable "slash_command_lambda_tags" {
@@ -186,7 +176,7 @@ variable "target_topic_arn" {
 
 variable "sms_description" {
   description = "Lambda function description."
-  default     = "Slack slash command handler."
+  default     = "Forward SMS message to SNS topic for sending."
 }
 
 variable "sms_function_name" {
